@@ -1,12 +1,53 @@
 #!/usr/bin/env groovy
 pipeline {
-    agent any
 
+    agent any
+    triggers {
+        pollSCM 'H/15 * * * *'
+    }
+    tools {
+        maven 'Maven-3.6.3'
+    }
+    options {
+        timeout(60)
+        timestamps()
+    }
     stages {
-        stage('Build') {
+        stage('Compile Junit') {
             steps {
-                sh 'make'
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                script {
+                    CURRENT_STAGE = env.STAGE_NAME
+                }
+
+                catchError(buildResult: 'SUCCESS') {
+                    script {
+                        sh "'mvn' clean compile test integration-test"
+                    }
+                }
+            }
+        }
+        stage('Package') {
+            steps {
+                script {
+                    CURRENT_STAGE = env.STAGE_NAME
+                }
+
+                catchError(buildResult: 'SUCCESS') {
+                    script {
+                        sh "'mvn' package -DskipTests=true -Pmysql-db"
+                    }
+                }
+            }
+        }
+        stage('Collect Aritifacts') {
+            steps {
+                script {
+                    CURRENT_STAGE = env.STAGE_NAME
+                }
+
+                script {
+                    archiveArtifacts 'target/*.jar'
+                }
             }
         }
     }
