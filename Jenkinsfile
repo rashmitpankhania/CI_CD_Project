@@ -34,7 +34,7 @@ pipeline {
 
                 catchError(buildResult: 'SUCCESS') {
                     script {
-                        sh "'mvn' package -DskipTests=true -Pmysql-db"
+                        sh "'mvn' package"
                     }
                 }
             }
@@ -48,6 +48,11 @@ pipeline {
                 script {
                     archiveArtifacts 'target/*.jar'
                 }
+            }
+        }
+        post {
+            always {
+                junit 'target/surefire-reports/*.xml'
             }
         }
     }
